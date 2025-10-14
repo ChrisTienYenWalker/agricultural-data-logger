@@ -1,0 +1,50 @@
+# === VS Code ===
+.vscode/
+!.vscode/settings.json    # (optional) keep shared settings if needed
+!.vscode/extensions.json  # (optional)
+
+# === Build Artifacts ===
+build/
+Build/
+out/
+bin/
+obj/
+*.o
+*.a
+*.elf
+*.hex
+*.map
+*.bin
+*.d
+*.lst
+*.log
+*.dep
+*.su
+*.axf
+
+# === C/C++ Intermediate Files ===
+*.sdf
+*.pdb
+*.idb
+*.ilk
+*.exp
+
+# === IDE Specific (optional, uncomment as needed) ===
+
+# STM32CubeIDE 
+.metadata/
+.settings/
+*.launch
+Debug/
+Release/
+
+# === Backup / Temp Files ===
+*.bak
+*.tmp
+*.swp
+*.DS_Store
+Thumbs.db
+
+# === Python build tools (if used for scripts) ===
+__pycache__/
+*.pyc

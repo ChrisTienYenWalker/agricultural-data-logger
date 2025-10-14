@@ -1,0 +1,626 @@
+#
+# Serial Studio
+# https://serial-studio.com/
+#
+# Copyright (C) 2020–2025 Alex Spataru
+#
+# This file is dual-licensed:
+#
+# - Under the GNU GPLv3 (or later) for builds that exclude Pro modules.
+# - Under the Serial Studio Commercial License for builds that include
+#   any Pro functionality.
+#
+# You must comply with the terms of one of these licenses, depending
+# on your use case.
+#
+# For GPL terms, see <https://www.gnu.org/licenses/gpl-3.0.html>
+# For commercial terms, see LICENSE_COMMERCIAL.md in the project root.
+#
+# SPDX-License-Identifier: GPL-3.0-only OR LicenseRef-SerialStudio-Commercial
+#
+
+name: Deploy
+
+#---------------------------------------------------------------------------------------------------
+# Workflow triggers
+#---------------------------------------------------------------------------------------------------
+
+on:
+  # Run on push
+  push:
+    paths-ignore:                                              # File patterns to ignore
+    - '**/*.md'                                                # Ignore *.md files
+    - '**/*.ssproj'                                            # Ignore *.ssproj files
+
+  # Run on pull-request
+  pull_request:                                 
+    paths-ignore:                                              # File patterns to ignore
+    - '**/*.md'                                                # Ignore *.md files
+    - '**/*.ssproj'                                            # Ignore *.ssproj files
+
+#---------------------------------------------------------------------------------------------------
+# Global variables
+#---------------------------------------------------------------------------------------------------
+
+env:
+  QT_VERSION: "6.9.2"                                          # Version of Qt to install
+  APP_VERSION: "3.1.10"                                        # Application version
+  QML_DIR: "../../app/qml"                                     # Path to QML sources
+  PUBLISHER: "Alex Spataru"                                    # Application publisher
+  QTFRAMEWORK_BYPASS_LICENSE_CHECK: "true"                     # Bypass Qt license check
+  CACHE_UUID_LINUX_X64: "2b1c6f90-8274-42b2-9a13-bb79cd2d17b6" # Cache key for Qt Linux x64 install
+  CACHE_UUID_LINUX_ARM: "c8a4b25f-7a92-4c8f-a08b-99a9b97b7ef1" # Cache key for Qt Linux arm64 install
+  CACHE_UUID_MACOS_X64: "fdc5bb4b-3da8-4e85-8759-782b2c5a2d23" # Cache key for Qt macOS install
+  CACHE_UUID_MSWIN_X64: "13c58b76-7ef5-44c8-b68f-3b3dcbde888e" # Cache key for Qt Windows install
+
+#---------------------------------------------------------------------------------------------------
+# Workflow jobs
+#---------------------------------------------------------------------------------------------------
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - edition:       commercial                          # Commercial edition    
+            arch:          x64                                 # Intel x64 architecture
+            os:            ubuntu-22.04                        # Ubuntu 22.04
+            appName:       "Serial Studio Pro"                 # Application name
+            appExecutable: "Serial-Studio-Pro"                 # Executable name
+            unixName:      "serial-studio-pro"                 # UNIX name (for packaging)
+
+          - edition:       commercial                          # Commercial edition    
+            arch:          arm64                               # ARM 64-bit architecture
+            os:            ubuntu-24.04-arm                    # Ubuntu 24.04 ARM
+            appName:       "Serial Studio Pro"                 # Application name
+            appExecutable: "Serial-Studio-Pro"                 # Executable name
+            unixName:      "serial-studio-pro"                 # UNIX name (for packaging)
+
+          - edition:       commercial                          # Commercial edition   
+            arch:          x64                                 # Produces Universal binary
+            os:            macos-latest                        # macOS 13.0+
+            appName:       "Serial Studio Pro"                 # Application name
+            appExecutable: "Serial-Studio-Pro"                 # Executable name
+            unixName:      "serial-studio-pro"                 # UNIX name (for packaging)
+
+          - edition:       commercial                          # Commercial edition   
+            arch:          x64                                 # Intel x64 architecture
+            os:            windows-latest                      # Windows 10/11
+            appName:       "Serial Studio Pro"                 # Application name
+            appExecutable: "Serial-Studio-Pro"                 # Executable name
+            unixName:      "serial-studio-pro"                 # UNIX name (for packaging)
+
+#---------------------------------------------------------------------------------------------------
+# Configure build action names
+#---------------------------------------------------------------------------------------------------
+
+    runs-on: ${{ matrix.os }}
+    name: "🛠️ ${{ matrix.os }} (${{ matrix.arch }}) - ${{ matrix.appName }}"
+
+    steps:
+
+#---------------------------------------------------------------------------------------------------
+# Obtain correct cache key for Qt installation
+#---------------------------------------------------------------------------------------------------
+
+      - name: "⚙️ Set environment variables"
+        if: matrix.os != 'windows-latest'
+        run: |
+          case "${{ matrix.os }}" in
+            ubuntu-22.04)
+              qtCacheKey="${{ env.CACHE_UUID_LINUX_X64 }}"
+              ;;
+            ubuntu-24.04-arm)
+              qtCacheKey="${{ env.CACHE_UUID_LINUX_ARM }}"
+              ;;
+            macos-latest)
+              qtCacheKey="${{ env.CACHE_UUID_MACOS_X64 }}"
+              ;;
+            *)
+              echo "Unknown OS: ${{ matrix.os }}" && exit 1
+              ;;
+          esac
+      
+          echo "CACHE_KEY=$qtCacheKey" >> $GITHUB_ENV
+          echo "QT_OUTPUT_DIR=${{ github.workspace }}/Qt-${{ env.QT_VERSION }}-${{ runner.os }}-${{ env.QT_ARCH }}" >> $GITHUB_ENV
+
+      - name: "⚙️ Set environment variables"
+        shell: pwsh
+        if: matrix.os == 'windows-latest'
+        run: |
+          $qtCacheKey = ""
+      
+          switch ("${{ matrix.os }}") {
+            "windows-latest" { $qtCacheKey = "${{ env.CACHE_UUID_MSWIN_X64 }}" }
+            default { Write-Error "Unknown OS: ${{ matrix.os }}" ; exit 1 }
+          }
+      
+          $qtOutputDir = "${{ github.workspace }}\Qt-${{ env.QT_VERSION }}-${{ runner.os }}-${{ env.QT_ARCH }}"
+      
+          Add-Content -Path $env:GITHUB_ENV -Value "CACHE_KEY=$qtCacheKey"
+          Add-Content -Path $env:GITHUB_ENV -Value "QT_OUTPUT_DIR=$qtOutputDir"
+
+#---------------------------------------------------------------------------------------------------
+# Checkout the source code
+#---------------------------------------------------------------------------------------------------
+
+      - name: "🔍 Checkout"       
+        uses: actions/checkout@v4
+
+#---------------------------------------------------------------------------------------------------
+# Install build tools
+#---------------------------------------------------------------------------------------------------
+
+      - name: "🛠️ Install CMake" 
+        uses: lukka/get-cmake@latest
+        with:
+          useLocalCache: false
+
+      - name: '🛠 Setup MSVC Development Environment'
+        uses: TheMrMilchmann/setup-msvc-dev@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          arch: x64
+
+#---------------------------------------------------------------------------------------------------
+# Install dependencies (Linux only)
+#---------------------------------------------------------------------------------------------------
+
+      - name: "📦 Install dependencies (Linux)"
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            fakeroot \
+            libcups2-dev \
+            libegl1 \
+            libfuse2 \
+            libgl1-mesa-dev \
+            libasound2-dev \
+            libssl-dev \
+            libudev-dev \
+            libzstd-dev \
+            rpm \
+            libxcb1 \
+            libxcb-cursor0 \
+            libxcb-cursor-dev \
+            libxcb-glx0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-image0-dev \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-shm0 \
+            libxcb-sync1 \
+            libxcb-util0-dev \
+            libxcb-util1 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0 \
+            libxcb-xkb-dev \
+            libxcb-xtest0 \
+            libxkbcommon-dev \
+            libxkbcommon-x11-0 \
+            libxkbcommon-x11-dev
+
+#---------------------------------------------------------------------------------------------------
+# Qt installation for GPLv3 builds
+#---------------------------------------------------------------------------------------------------
+
+      - name: "📚 Install Open Source Qt"
+        if: matrix.edition == 'gpl3'
+        uses: jurplel/install-qt-action@v4
+        with:
+          cache: true
+          target: desktop
+          host: ${{matrix.qtHost}}
+          arch: ${{matrix.qtArch}}
+          version: ${{env.QT_VERSION}}
+          modules: "qt3d qtquick3d qtdatavis3d qtgraphs qtserialport qtconnectivity qtshadertools"
+
+#---------------------------------------------------------------------------------------------------
+# Qt installation for commercial builds
+#---------------------------------------------------------------------------------------------------
+
+      - name: "🗃️ Restore Commercial Qt Cache"
+        id: qt-cache
+        uses: actions/cache/restore@v3
+        if: matrix.edition == 'commercial'
+        with:
+          key: ${{env.CACHE_KEY}}
+          enableCrossOsArchive: true
+          path: |
+            ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}
+            ${{env.USERPROFILE}}/.qt-license
+
+      - name: "📚 Install Commercial Qt (UNIX)"
+        if: matrix.edition == 'commercial' && steps.qt-cache.outputs.cache-hit != 'true' && matrix.os != 'windows-latest'
+        env:
+          QT_ARCH: ${{matrix.arch}}
+          QT_USERNAME: ${{secrets.QT_USERNAME}}
+          QT_PASSWORD: ${{secrets.QT_PASSWORD}}
+          QT_OUTPUT_DIR: ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}
+        shell: bash
+        run: |
+          chmod +x ./scripts/install-qt.sh
+          ./scripts/install-qt.sh
+
+      - name: "📚 Install Commercial Qt (Windows)"
+        if: matrix.edition == 'commercial' && steps.qt-cache.outputs.cache-hit != 'true' && matrix.os == 'windows-latest'
+        env:
+          QT_ARCH: ${{matrix.arch}}
+          QT_USERNAME: ${{secrets.QT_USERNAME}}
+          QT_PASSWORD: ${{secrets.QT_PASSWORD}}
+          QT_OUTPUT_DIR: ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}
+        shell: pwsh
+        run: |
+          ./scripts/install-qt.ps1
+
+      - name: "🗃️ Save Commercial Qt Cache"
+        uses: actions/cache/save@v3
+        if: matrix.edition == 'commercial' && steps.qt-cache.outputs.cache-hit != 'true'
+        env:
+          QT_OUTPUT_DIR: ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}
+        with:
+          key: ${{ env.CACHE_KEY }}
+          enableCrossOsArchive: true
+          path: |
+            ${{ env.QT_OUTPUT_DIR }}
+            ${{ env.QT_OUTPUT_DIR }}/.qt-license
+
+#---------------------------------------------------------------------------------------------------
+# Add Commercial Qt to PATH
+#---------------------------------------------------------------------------------------------------
+
+      - name: "🔗 Add Commercial Qt to PATH (Linux)"
+        if: matrix.edition == 'commercial' && startsWith(matrix.os, 'ubuntu')
+        shell: bash
+        env:
+          QT_VERSION: ${{env.QT_VERSION}}
+          QT_OUTPUT_DIR: ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}
+        run: |
+          gcc_path=""
+          if [ "${{matrix.arch}}" = "x64" ]; then
+            gcc_path="gcc_64"
+          else
+            gcc_path="gcc_arm64"
+          fi
+
+          export QT_BIN_PATH="${QT_OUTPUT_DIR}/${QT_VERSION}/${gcc_path}/bin"
+          export QT_LIBEXEC_PATH="${QT_OUTPUT_DIR}/${QT_VERSION}/${gcc_path}/libexec"
+          export CMAKE_PREFIX_PATH="${QT_OUTPUT_DIR}/${QT_VERSION}/${gcc_path}/lib/cmake"
+
+          echo "$QT_BIN_PATH" >> $GITHUB_PATH
+          echo "$QT_LIBEXEC_PATH" >> $GITHUB_PATH
+          echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
+
+      - name: "🔗 Add Commercial Qt to PATH (macOS)"
+        if: matrix.edition == 'commercial' && matrix.os == 'macos-latest'
+        shell: bash
+        env:
+          QT_VERSION: ${{env.QT_VERSION}}
+          QT_OUTPUT_DIR: ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}
+        run: |
+          export QT_BIN_PATH="${QT_OUTPUT_DIR}/${QT_VERSION}/macos/bin"
+          export QT_LIBEXEC_PATH="${QT_OUTPUT_DIR}/${QT_VERSION}/macos/libexec"
+          export CMAKE_PREFIX_PATH="${QT_OUTPUT_DIR}/${QT_VERSION}/macos/lib/cmake"
+
+          echo "$QT_BIN_PATH" >> $GITHUB_PATH
+          echo "$QT_LIBEXEC_PATH" >> $GITHUB_PATH
+          echo "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
+
+      - name: "🔗 Add Commercial Qt to PATH (Windows)"
+        if: matrix.edition == 'commercial' && matrix.os == 'windows-latest'
+        shell: pwsh
+        env:
+          QT_VERSION: ${{env.QT_VERSION}}
+          QT_OUTPUT_DIR: ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}
+        run: |
+          $QT_BIN_PATH = "$env:QT_OUTPUT_DIR\$env:QT_VERSION\msvc2022_64\bin"
+          $QT_LIBEXEC_PATH = "$env:QT_OUTPUT_DIR\$env:QT_VERSION\msvc2022_64\libexec"
+          $CMAKE_PREFIX_PATH = "$env:QT_OUTPUT_DIR\$env:QT_VERSION\msvc2022_64\lib\cmake"
+    
+          Write-Output "$QT_BIN_PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Output "$QT_LIBEXEC_PATH" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Output "CMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH" >> $env:GITHUB_ENV
+
+#---------------------------------------------------------------------------------------------------
+# CMake configuration
+#---------------------------------------------------------------------------------------------------
+
+      - name: "⚙️ Configure with CMake (Linux, Commercial)"
+        if: matrix.edition == 'commercial' && startsWith(matrix.os, 'ubuntu')
+        env:
+          ARCGIS_API_KEY: ${{ secrets.ARCGIS_API_KEY }}
+          SERIAL_STUDIO_LICENSE_KEY: ${{ secrets.SERIAL_STUDIO_LICENSE_KEY }}
+          SERIAL_STUDIO_INSTANCE_ID: ${{ secrets.SERIAL_STUDIO_INSTANCE_ID }}
+        run: |
+          mkdir build
+          cd build
+          cmake ../ -DPRODUCTION_OPTIMIZATION=ON -DCMAKE_BUILD_TYPE=Release -DBUILD_COMMERCIAL=ON -DBUILD_GPL3=OFF
+
+      - name: "⚙️ Configure with CMake (Linux, GPLv3)"
+        if: matrix.edition == 'gpl3' && startsWith(matrix.os, 'ubuntu')
+        run: |
+          mkdir build
+          cd build
+          cmake ../ -DPRODUCTION_OPTIMIZATION=ON -DCMAKE_BUILD_TYPE=Release
+
+      - name: "⚙️ Configure with CMake (macOS, Commercial)"
+        if: matrix.edition == 'commercial' && matrix.os == 'macos-latest'
+        env:
+          ARCGIS_API_KEY: ${{secrets.ARCGIS_API_KEY}}
+          SERIAL_STUDIO_LICENSE_KEY: ${{secrets.SERIAL_STUDIO_LICENSE_KEY}}
+          SERIAL_STUDIO_INSTANCE_ID: ${{secrets.SERIAL_STUDIO_INSTANCE_ID}}
+        run: |
+          mkdir build
+          cd build
+          cmake ../ \
+            -DPRODUCTION_OPTIMIZATION=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DBUILD_COMMERCIAL=ON \
+            -DBUILD_GPL3=OFF
+
+      - name: "⚙️ Configure with CMake (macOS, GPL3)"
+        if: matrix.edition == 'gpl3' && matrix.os == 'macos-latest'
+        run: |
+          mkdir build
+          cd build
+          cmake ../ \
+            -DPRODUCTION_OPTIMIZATION=ON \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" 
+
+      - name: "Configure with CMake (Windows, Commercial)"
+        if: matrix.edition == 'commercial' && matrix.os == 'windows-latest'
+        env:
+          ARCGIS_API_KEY: ${{secrets.ARCGIS_API_KEY}}
+          SERIAL_STUDIO_LICENSE_KEY: ${{secrets.SERIAL_STUDIO_LICENSE_KEY}}
+          SERIAL_STUDIO_INSTANCE_ID: ${{secrets.SERIAL_STUDIO_INSTANCE_ID}}
+        run: |
+          mkdir build
+          cd build
+          cmake ../ `
+            -DCMAKE_CXX_COMPILER=cl `
+            -DCMAKE_C_COMPILER=cl `
+            -DPRODUCTION_OPTIMIZATION=ON `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_COMMERCIAL=ON `
+            -DBUILD_GPL3=OFF
+
+      - name: "⚙️ Configure with CMake (Windows, GPL3)"
+        if: matrix.edition == 'gpl3' && matrix.os == 'windows-latest'
+        run: |
+          mkdir build
+          cd build
+          cmake ../ `
+            -DCMAKE_CXX_COMPILER=cl `
+            -DCMAKE_C_COMPILER=cl `
+            -DPRODUCTION_OPTIMIZATION=ON `
+            -DCMAKE_BUILD_TYPE=Release 
+
+#---------------------------------------------------------------------------------------------------
+# Build application
+#---------------------------------------------------------------------------------------------------
+
+      - name: "🔨 Build application (UNIX)"
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd build
+          cmake --build . --config Release --parallel 16
+
+      - name: "🔨 Build application (Windows, GPL3)"
+        if: matrix.edition == 'gpl3' && matrix.os == 'windows-latest'
+        run: |
+          cd build
+          cmake --build . --config Release --parallel 16
+
+      - name: "🔨 Build application (Windows, Commercial)"
+        if: matrix.edition == 'commercial' && matrix.os == 'windows-latest'
+        run: |
+          cd build
+          cmake --build . --config Release --parallel 16
+
+#---------------------------------------------------------------------------------------------------
+# Linux packaging
+#---------------------------------------------------------------------------------------------------
+
+      - name: "📦 Create AppImage"
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          cd "build/app"
+
+          arch_suffix=""
+          if [ "${{matrix.arch}}" = "x64" ]; then
+            arch_suffix="x86_64"
+          else
+            arch_suffix="aarch64"
+          fi
+
+          LINUXDEPLOY_URL="https://github.com/linuxdeploy/linuxdeploy/releases/download/1-alpha-20240109-1/linuxdeploy-${arch_suffix}.AppImage"
+          PLUGIN_QT_URL="https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-${arch_suffix}.AppImage"
+
+          wget "$LINUXDEPLOY_URL"
+          wget "$PLUGIN_QT_URL"
+          chmod +x linuxdeploy-${arch_suffix}.AppImage
+          chmod +x linuxdeploy-plugin-qt-${arch_suffix}.AppImage
+
+          export QML_SOURCES_PATHS="${{env.QML_DIR}}"
+          ./linuxdeploy-${arch_suffix}.AppImage --appdir AppDir -e ${{matrix.unixName}} -i ../../app/deploy/linux/${{matrix.unixName}}.svg -d ../../app/deploy/linux/${{matrix.unixName}}.desktop --plugin qt --output appimage
+        
+          rm linuxdeploy-${arch_suffix}.AppImage
+          rm linuxdeploy-plugin-qt-${arch_suffix}.AppImage
+
+          mv *.AppImage ../../${{matrix.appExecutable}}-${{env.APP_VERSION}}-Linux-${{matrix.arch}}.AppImage
+
+      - name: "⬆️ Upload artifact: AppImage"
+        uses: actions/upload-artifact@v4
+        if: startsWith(matrix.os, 'ubuntu')
+        with:
+          name: ${{matrix.appExecutable}}-${{env.APP_VERSION}}-Linux-${{matrix.arch}}.AppImage
+          path: ${{matrix.appExecutable}}-${{env.APP_VERSION}}-Linux-${{matrix.arch}}.AppImage
+
+#---------------------------------------------------------------------------------------------------
+# macOS packaging & notarization (ugh)
+#---------------------------------------------------------------------------------------------------
+
+      - name: "📦 Package with CPack (macOS)"
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd build
+          cpack --verbose
+
+      - name: "🔑 Import Certificates"
+        if: matrix.os == 'macos-latest'
+        uses: alex-spataru/import-codesign-certs@v4
+        with:
+          p12-file-base64: ${{secrets.APPLE_CERTIFICATES_P12}}
+          p12-password: ${{secrets.APPLE_CERTIFICATES_P12_PASSWORD}}
+
+      - name: "💾 Mount DMG and copy application"
+        if: matrix.os == 'macos-latest'
+        run: |
+          VOLUME=$(yes | hdiutil attach ./build/*.dmg -nobrowse | grep "Volumes" | awk '{print $3}')
+          cp -a "$VOLUME/${{matrix.appExecutable}}.app" "${{matrix.appName}}.app"
+          hdiutil detach "$VOLUME"
+
+      - name: "🔏 Sign Application with Entitlements"
+        if: matrix.os == 'macos-latest'
+        run: |
+          codesign --force --deep --options runtime \
+            --entitlements "${GITHUB_WORKSPACE}/app/deploy/macOS/Serial-Studio.entitlements" \
+            --sign "${{secrets.APPLE_APPID_TEAM_ID}}" \
+            "${{matrix.appName}}.app"
+
+      - name: "💽 Create nice DMG"
+        if: matrix.os == 'macos-latest'
+        run: |
+          npm install --global create-dmg
+          # Remove LICENSE.md to avoid including it in the DMG
+          rm LICENSE.md
+          create-dmg "${{matrix.appName}}.app" --dmg-title="${{matrix.appName}}.app"
+          mv "${{matrix.appName}} ${{env.APP_VERSION}}.dmg" "${{matrix.appExecutable}}-${{env.APP_VERSION}}-macOS.dmg"
+
+      - name: "📝 Notarize"
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        env:
+          PRODUCT_PATH: ${{matrix.appExecutable}}-${{env.APP_VERSION}}-macOS.dmg
+          APPLE_ID: ${{secrets.APPLE_NOTARIZATION_USERNAME}}
+          APP_PASSWORD: ${{secrets.APPLE_NOTARIZATION_PASSWORD}}
+          TEAM_ID: ${{secrets.APPLE_NOTARIZATION_TEAMID}}
+        run: |
+          echo "Submitting $PRODUCT_PATH for notarization..."
+          xcrun notarytool submit "$PRODUCT_PATH" \
+            --apple-id "$APPLE_ID" \
+            --password "$APP_PASSWORD" \
+            --team-id "$TEAM_ID" \
+            --wait \
+            --output-format json
+
+      - name: "📌 Staple"
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          PRODUCT="${{matrix.appExecutable}}-${{env.APP_VERSION}}-macOS.dmg"
+          echo "Stapling $PRODUCT..."
+          xcrun stapler staple "$PRODUCT"
+
+      - name: "⬆️ Upload artifact: DMG"
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.appExecutable}}-${{env.APP_VERSION}}-macOS.dmg
+          path: ${{matrix.appExecutable}}-${{env.APP_VERSION}}-macOS.dmg
+
+#---------------------------------------------------------------------------------------------------
+# Windows packaging
+#---------------------------------------------------------------------------------------------------
+
+      - name: '⚙️ Add msbuild to PATH'
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: '⚙️ Install WiX'
+        if: matrix.os == 'windows-latest'
+        run: dotnet tool install --global wix
+
+      - name: "📦 Package with CPack (Windows)"
+        if: matrix.os == 'windows-latest'
+        env:
+          QT_BIN_PATH: ${{github.workspace}}/Qt-${{env.QT_VERSION}}-${{runner.os}}-${{matrix.arch}}/${{env.QT_VERSION}}/msvc2022_64/bin
+        run: |
+          $env:PATH = "$env:QT_BIN_PATH;$env:PATH"
+          cd build
+          cpack --verbose
+          mv *.msi ${{matrix.appExecutable}}-${{env.APP_VERSION}}-Windows.msi
+          mv ${{matrix.appExecutable}}-${{env.APP_VERSION}}-Windows.msi ../
+
+      - name: "⬆️ Upload artifact: MSI installer"
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.appExecutable}}-${{env.APP_VERSION}}-Windows.msi
+          path: ${{matrix.appExecutable}}-${{env.APP_VERSION}}-Windows.msi
+
+#---------------------------------------------------------------------------------------------------
+# Create release
+#---------------------------------------------------------------------------------------------------
+
+  upload:
+    name: "🚀 Create release and upload artifacts"
+    needs:
+      - build
+
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && github.ref_name || 'continuous' }}
+
+    steps:
+      - name: "⬇️ Download artifacts"
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          merge-multiple: true
+
+      - name: "🗑️ Delete previous release and tag if exists"
+        run: |
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" &>/dev/null; then
+            echo "Release '$RELEASE_TAG' exists. Deleting..."
+            gh release delete "$RELEASE_TAG" --cleanup-tag --yes --repo "$GITHUB_REPOSITORY" || echo "Failed to delete release. Ignoring."
+          else
+            echo "No release named '$RELEASE_TAG' found. Skipping delete."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "🔢 Generate SHA256 checksums with sizes"
+        run: |
+          echo "| File | SHA256 Checksum |" > release-body.md
+          echo "|------|-----------------|" >> release-body.md
+
+          find ./artifacts -type f \( -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.dmg" -o -name "*.exe" -o -name "*.msi" \) | sort | while read -r file; do
+            hash=$(sha256sum "$file" | awk '{print $1}')
+            filename=$(basename "$file")
+            echo "| \`$filename\` | \`$hash\` |" >> release-body.md
+          done
+
+      - name: "🚀 Create Release"
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ env.RELEASE_TAG }}
+          prerelease: true
+          allowUpdates: true
+          replacesArtifacts: true
+          name: 'Continuous Build'
+          bodyFile: release-body.md
+          artifacts: |
+            artifacts/*.AppImage
+            artifacts/*.dmg
+            artifacts/*.msi
