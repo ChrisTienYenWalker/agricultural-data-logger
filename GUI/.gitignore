@@ -1,70 +1,82 @@
-# macOS system files
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-.AppleDB
-.AppleDesktop
-.apdisk
+# This file is used to ignore files which are generated
+# ----------------------------------------------------------------------------
 
-# General caches
-.cache
-
-# Build outputs
-/build*/        
-*/build*/      
-cmake-build-*/ 
-
-# Binary builds
-udp_function_generator
-udp_function_generator.exe
-
-# Qt artifacts
+*~
 *.autosave
-*.user
-*.pro.user
-*.qmake.stash
+*.a
+*.core
 *.moc
+*.o
+*.obj
+*.orig
+*.rej
+*.so
+*.so.*
+*_pch.h.cpp
+*_resource.rc
+*.qm
+.#*
+*.*#
+core
+!core/
+tags
+.DS_Store
+.directory
+*.debug
+Makefile*
+*.prl
+*.app
 moc_*.cpp
-qrc_*.cpp
 ui_*.h
-*.qmlls.ini
+qrc_*.cpp
+Thumbs.db
+*.res
+*.rc
+/.qmake.cache
+/.qmake.stash
 
-# IDE configs
-# VS Code
-.vscode/
-*.code-workspace
+# qtcreator generated files
+*.pro.user*
+*.qbs.user*
+CMakeLists.txt.user*
 
-# Qt Creator
-*.pro.user.*
-*.creator.*
-*.creator
+# xemacs temporary files
+*.flc
 
-# CLion
-.idea/
-.idea_modules/
-cmake-build-*/
+# Vim temporary files
+.*.swp
 
-# Xcode
-*.xcworkspace/
-*.xcuserstate
-*.xcuserdatad/
-*.xcodeproj/*
-!*.xcodeproj/project.pbxproj
-!*.xcodeproj/xcshareddata/
-*.mode1v3
-*.mode2v3
-*.perspectivev3
+# Visual Studio generated files
+*.ib_pdb_index
+*.idb
+*.ilk
+*.pdb
+*.sln
+*.suo
+*.vcproj
+*vcproj.*.*.user
+*.ncb
+*.sdf
+*.opensdf
+*.vcxproj
+*vcxproj.*
 
-# KDevelop
-*.kdev*
+# MinGW generated files
+*.Debug
+*.Release
 
-# Other
-*.layout
+# Python byte code
+*.pyc
+
+# Binaries
+# --------
+*.dll
+*.exe
+
+# Directories with generated files
+.moc/
+.obj/
+.pch/
+.rcc/
+.uic/
+/build*/
