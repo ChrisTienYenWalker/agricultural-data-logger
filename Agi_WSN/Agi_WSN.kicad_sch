@@ -1,0 +1,282 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "21693e23-c6b2-404c-9fd8-1ddc5d9cae0d")
+	(paper "A4")
+	(lib_symbols)
+	(sheet
+		(at 44.45 121.92)
+		(size 44.45 31.75)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "05ae2e05-5369-422d-af1e-3500891f43be")
+		(property "Sheetname" "EEPROM"
+			(at 44.45 121.2084 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "EEPROM.kicad_sch"
+			(at 44.45 154.2546 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Agi_WSN"
+				(path "/21693e23-c6b2-404c-9fd8-1ddc5d9cae0d"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 205.74 73.66)
+		(size 38.1 29.21)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "16a3b147-06d2-4af8-957e-4a8d579a62b1")
+		(property "Sheetname" "MCU"
+			(at 205.74 72.9484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "MCU.kicad_sch"
+			(at 205.74 103.4546 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(property "Field2" ""
+			(at 205.74 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(instances
+			(project "Agi_WSN"
+				(path "/21693e23-c6b2-404c-9fd8-1ddc5d9cae0d"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 106.68 111.76)
+		(size 49.53 24.13)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "1b760c89-8d66-46c3-8adb-bb4e17f39028")
+		(property "Sheetname" "Power"
+			(at 106.68 111.0484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "Power.kicad_sch"
+			(at 106.68 136.4746 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Agi_WSN"
+				(path "/21693e23-c6b2-404c-9fd8-1ddc5d9cae0d"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 46.99 69.85)
+		(size 59.69 30.48)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "24c05240-a04c-4638-b392-7cb0b38029d1")
+		(property "Sheetname" "Sensors"
+			(at 46.99 69.1384 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "Sensors.kicad_sch"
+			(at 46.99 100.9146 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(property "Field2" ""
+			(at 46.99 69.85 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(instances
+			(project "Agi_WSN"
+				(path "/21693e23-c6b2-404c-9fd8-1ddc5d9cae0d"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 191.77 121.92)
+		(size 39.37 29.21)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "496958a0-9c89-4ec2-a0b6-cadc0aba2ce0")
+		(property "Sheetname" "Connectors"
+			(at 191.77 121.2084 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "Connectors.kicad_sch"
+			(at 191.77 151.7146 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Agi_WSN"
+				(path "/21693e23-c6b2-404c-9fd8-1ddc5d9cae0d"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 129.54 71.12)
+		(size 55.88 22.86)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "9ca661d4-5930-43ec-88ad-ca299e745e3f")
+		(property "Sheetname" "RTC"
+			(at 129.54 70.4084 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "RTC.kicad_sch"
+			(at 129.54 94.5646 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "Agi_WSN"
+				(path "/21693e23-c6b2-404c-9fd8-1ddc5d9cae0d"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
