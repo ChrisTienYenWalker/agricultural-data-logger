@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
+import json
 
 class Config(QWidget):
     def __init__(self):

@@ -1,10 +1,8 @@
 import sys
+import json
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QTabWidget, QVBoxLayout, QLabel
 )
-
-
-from connection import Tab1
 
 from HomePage import Home
 from DataPage import Data
@@ -15,7 +13,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Agricultural Data Logger")
-        self.setStyleSheet("background-color: #a87b32;")  
+        self.setStyleSheet("background-color: lightgrey;")  
         
         layout = QVBoxLayout()
         self.tabs = QTabWidget()
