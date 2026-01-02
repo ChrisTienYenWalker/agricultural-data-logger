@@ -3,7 +3,6 @@
 
 #include "stm32f1xx_hal.h"   // Change if you use a different family
 
-void Comms_SendHello(void);
-void Comms_SendMsg(char msg[]);
+void Comms_SendMsg(char *msg, uint16_t len);
 
 #endif

@@ -43,7 +43,7 @@ UART_HandleTypeDef huart1;
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
-
+extern ADC_HandleTypeDef hadc1;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
@@ -102,7 +102,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    App_Tick();
+    App_Start();
   
   }
   /* USER CODE END 3 */
